@@ -1,21 +1,32 @@
-# Use an official Python runtime as a parent image
-FROM python:3.9-slim
+# Use the official Python base image
+FROM python:3.10.14-bookworm
 
-# Set the working directory in the container
+# Upgrade pip and install dependencies
+RUN pip install --upgrade pip
+
+# Copy the application source code
+COPY src /app/src
+
+# Copy the entrypoint script to the container
+COPY entrypoint.sh /app/entrypoint.sh
+
+# Set the working directory
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY . /app
+# Create the trained_models directory
+RUN mkdir -p /app/src/trained_models
 
-# Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+# Adjust permissions (if needed)
+RUN chmod -R 777 /app/src
 
-# Run training script
-RUN python -m src.train_pipeline
+# Make the entrypoint script executable
+RUN chmod +x /app/entrypoint.sh
 
-# Expose the port the app runs on
-EXPOSE 8000
+# Install the Python dependencies
+RUN pip install -r /app/src/requirements.txt
 
-# Run the Flask app
-CMD ["uvicorn", "src.predict:app", "--host", "0.0.0.0", "--port", "8000"]
+# Set the PYTHONPATH environment variable
+ENV PYTHONPATH=${PYTHONPATH}:/app/src
 
+# Set the entrypoint to the script
+ENTRYPOINT ["/app/entrypoint.sh"]
